@@ -1,0 +1,16 @@
+﻿   global TURN, field, kings, active_cell, highlighted, active_cell
+    AF = field[active_cell[1]][active_cell[0]]
+    kingmode = AF[0] == 'king'
+    field[active_cell[1]][active_cell[0]][2] = True
+    field[active_cell[1]][active_cell[0]] = field[active_cell[1]][active_cell[0]]
+    field[active_cell[1]][active_cell[0]] = [None] * 3
+    if kingmode : kings[TURN] = active_cell
+    if is_check()[0 if TURN else 2] :
+        field[active_cell[1]][active_cell[0]] = AF
+        field[active_cell[1]][active_cell[0]] = cell
+        if kingmode : kings[TURN] = active_cell
+        cell_is_active = False
+        TURN = not TURN
+        highlighted = np.zeros((8, 8))
+        return False
+    return True
