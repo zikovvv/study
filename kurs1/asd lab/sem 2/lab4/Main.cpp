@@ -58,7 +58,6 @@ int main(){
     cout << t.size() << endl;
 
     avl_tree_default_test();
-
     cout << "finished" << endl;
     getchar();
     return 0;
