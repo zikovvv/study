@@ -40,7 +40,7 @@ bool testAVLTree()
         dataToRangeQueries.push_back({minData, maxData});
     }
 
-    AVLTree<Data, Node<Data>> myTree;
+    AVLTree<Data> myTree;
     clock_t myStart = clock();
     for (int i = 0; i < iters; i++)
     {
@@ -52,7 +52,7 @@ bool testAVLTree()
     for (int i = 0; i < iters; i++)
     {
         myTree.erase(dataToErase[i]);
-    }
+    }cout << myTree.size() << endl;
     int myEraseSize = myInsertSize - myTree.size();
     int myFoundAmount = 0;
     for (int i = 0; i < iters; i++)
@@ -108,7 +108,7 @@ bool testAVLTree()
     clock_t stlRangeEnd = clock();
     float stlRangeTime = (float(stlRangeEnd - stlRangeStart)) / CLOCKS_PER_SEC;
 
-    cout << "My AVLTree: height = " << myTreeHeight << ", optimal height = " << optimalTreeHeight << endl;
+    cout << "My AVLTree: height = " << myTreeHeight << ", optimal height = " << optimalTreeHeight << ", maximum optimal height = " << optimalTreeHeight * 1.45 << endl;
     cout << "Time: " << myTime << ", size: " << myInsertSize << " - " << myEraseSize << ", found amount: " << myFoundAmount << endl;
     cout << "Range time: " << myRangeTime << ", range found amount: " << myRangeFoundAmount << endl << endl;
     cout << "STL Tree:" << endl;

@@ -4,54 +4,58 @@
 #include <cstdlib>
 #include <cstring>
 #include "test_binary_search_tree.h"
-using namespace std;template<typename T, typename Node> class AVLTree{
+using namespace std;
+template<typename T> class AVLTree{
     public :
+        typedef AVLNode<T> Node;
         Node* root = NULL;
         int Size = 0;
-        AVLTree(){}
+        AVLTree(){
+
+        }
         AVLTree(Node* node){
             root = node;
             Size = size(root);
+        }
+        ~AVLTree(){
+            cout << "destructed" << endl;
+            auto f = [=](Node* node){ delete node; };
+            postorderTraversal(root, f);
         }
         void insert(T val){
             Size++;
             if(root == NULL) root = new Node{val, NULL};
             else insert(root, val);
         }
-        void balance(){
-
-        }
         void erase(T val){
-            if(root != NULL){
-                Node* elem_to_delete = find_ptr(val);
-                if(elem_to_delete->data == val){
-                    if(elem_to_delete->right != NULL){
-                        Node* node = find_min(elem_to_delete->right);
-                        elem_to_delete->data = node->data;
-                        if(node->parent != elem_to_delete) node->parent->left = node->right; 
-                        else node->parent->right = node->right;
-                        if(node->right != NULL) node->right->parent = node->parent;
-                        delete node;
-                    }
-                    else if(elem_to_delete->left != NULL){
-                        Node* node = find_max(elem_to_delete->left);
-                        elem_to_delete->data = node->data;
-                        if(node->parent != elem_to_delete) node->parent->right = node->left;
-                        else node->parent->left = node->left;
-                        if(node->left != NULL) node->left->parent = node->parent;
-                        delete node;
-                    } 
-                    else{
-                        if(elem_to_delete->parent != NULL){
-                            if(elem_to_delete->parent->left == elem_to_delete) elem_to_delete->parent->left = NULL;
-                            else elem_to_delete->parent->right = NULL;
-                        }
-                        else root = NULL;
-                        delete elem_to_delete;
-                    }
-                    Size--;
-                }
+            if(root){
+                Size--;
+                root = erase(root, val);
             }
+        }
+        T eraseMin(Node* local_root){
+            if (local_root->left == NULL){
+                local_root->parent->left = local_root->right;
+                if(local_root->right) local_root->right->parent = local_root->parent;
+                T val = local_root->data;
+                delete local_root;
+                return val;
+            }
+            T val = eraseMin(local_root->left);
+            balance(local_root);
+            return val;
+        }
+        T eraseMax(Node* local_root){
+            if (local_root->right == NULL){
+                local_root->parent->right = local_root->left;
+                if(local_root->left) local_root->left->parent = local_root->parent;
+                T val = local_root->data;
+                delete local_root;
+                return val;
+            }
+            T val = eraseMax(local_root->right);
+            balance(local_root);
+            return val;
         }
         bool find(T val){ return root == NULL ? false : find_ptr(val)->data == val; }
         vector<T> findInRange_vector(T minObject, T maxObject){
@@ -69,111 +73,162 @@ using namespace std;template<typename T, typename Node> class AVLTree{
             findInRange_vector(minObject, maxObject, &elems_to_erase, root);
             for(auto it = elems_to_erase.begin(); it != elems_to_erase.end(); ++it) erase(*it);
         }
-        int height(){ return height(root); }
-        bool empty(){ return Size <= 0; }
+        int height(){ return root->height; }
+        bool empty(){ return root == NULL; }
         int size(){ return this->Size; }
-        AVLTree<T, Node>* split(T key){
+        AVLTree<T>* split(T key){
             Node* new_root = NULL;
             if (root->data == key){
-                new_root = new Node(key, NULL);
+                new_root = root;
                 new_root->left = NULL;
-                new_root->right = root->right;
+                root = root->left;
             }
             else{
                 pair<Node*, Node*> p = split(root, key);
                 new_root = p.second;
             }
-            AVLTree<T, Node>* new_tree = new AVLTree<T, Node>{new_root};
+            AVLTree<T>* new_tree = new AVLTree<T>(new_root);
+            new_tree->insert(key);
             return new_tree;
         }
         void print(){
+            auto f = [this](Node* node){ cout << node->data <<  ", h: " << node->height << " bfactor :  "  <<  bfactor(node) << endl; };
             cout << "inorder traversal :" << endl;
             if(root == NULL) cout << "No elements" << endl;
-            else inorderTraversal(root);
+            else inorderTraversal(root, f);
             cout << endl;
         } 
         void preorderTraversal(){
-            cout << "preorder treversal :" << endl;
-            if(root != NULL) preorderTraversal(root);
-            else cout << "No elements to traverse" << endl;
+            cout << "preorder traversal :" << endl;
+            auto f = [this](Node* node){ cout << node->data <<  ", h: " << node->height << " bfactor :  "  <<  bfactor(node) << endl; };
+            if(root != NULL) preorderTraversal(root, f);
+            else cout << "No elements to traverse" << endl;    
             cout << endl;
         }
-        void merge(AVLTree<T, Node> *tree){
-            Node* new_root = tree->root;
+        void merge(AVLTree<T> &tree){
+            Node* new_root = tree.root;
             root = merge(root, new_root);
         }
-    private :
-        void insert(Node* r, T val){
-            if(val > r->data){ 
-                if(r->right == NULL) r->right = new Node{val, r};
-                else insert(r->right, val);
-            }
-            else if(val < r->data){
-                if(r->left == NULL) r->left = new Node{val, r};
-                else  insert(r->left, val);
-            }
-            else Size--;
-            balance(r);
+        int bfactor(Node* local_root){
+            return local_root == NULL ? 0 : (local_root->left != NULL ? local_root->left->height : 0) - (local_root->right != NULL ? local_root->right->height : 0);
         }
-        void balance(Node* r){
-            //cout << r->data << " | ";
+        void balance(Node* local_root){
+            updateHeightLocal(local_root);
+            int factor = bfactor(local_root);    
+            if (factor == 2) {
+                if (bfactor(local_root->left) < 0){
+                    rotateLeft(local_root->left);
+                }
+                rotateRight(local_root);
+            } 
+            else if(factor == -2){
+                if (bfactor(local_root->right) > 0){
+                    rotateRight(local_root->right);
+                }
+                rotateLeft(local_root);
+            }
+        }
+        void updateHeightLocal(Node* r){
+            if(r != NULL)
+                r->height = 1 + max(r->right ? r->right->height : 0, r->left ? r->left->height : 0);
         }
         void rotateRight(Node* r){
-
+            Node* temp_node = r->right;
+            T temp_val = r->data;
+            r->right = r->left;
+            r->left = r->right->left;
+            if(r->left) r->left->parent = r;
+            r->right->left = r->right->right;
+            r->right->right = temp_node;
+            if (temp_node) temp_node->parent = r->right;
+            r->data = r->right->data;
+            r->right->data = temp_val;
+            updateHeightLocal(r->right);
+            updateHeightLocal(r);
         }
         void rotateLeft(Node* r){
+            Node* temp_node = r->left;
+            T temp_val = r->data;
+            r->left = r->right;
+            r->right = r->left->right;
+            if(r->right) r->right->parent = r;
+            r->left->right = r->left->left;
+            r->left->left = temp_node;
+            if (temp_node) temp_node->parent = r->left;
+            r->data = r->left->data;
+            r->left->data = temp_val;
+            updateHeightLocal(r->left);
+            updateHeightLocal(r);
+        }
 
+    private :
+        void insert(Node* r, T val){
+            if (r->data != val){
+                if(val > r->data){ 
+                    if(r->right == NULL) r->right = new Node{val, r};
+                    else insert(r->right, val);
+                }
+                else if(val < r->data){
+                    if(r->left == NULL) r->left = new Node{val, r};
+                    else insert(r->left, val);
+                }
+                balance(r);
+            }
+            else Size--;
+        }
+        void preorderTraversal(Node* node, auto& action){
+            if(node != NULL){
+                action(node);
+                preorderTraversal(node->left, action);
+                preorderTraversal(node->right, action);
+            }
+        }
+        void inorderTraversal(Node* node, auto& action){
+            if(node != NULL){
+                inorderTraversal(node->left, action);
+                action(node);
+                inorderTraversal(node->right, action);
+            }
+        }
+        void postorderTraversal(Node* node, auto& action){
+            if(node != NULL){
+                cout << node << endl;
+                postorderTraversal(node->left, action);
+                postorderTraversal(node->right, action);
+                action(node);
+            }
         }
         Node* merge(Node* t1, Node* t2){
             if (t1 == NULL) return t2;
             if (t2 == NULL) return t1;
             t1->data += t2->data;
             t1->left = merge(t1->left, t2->left);
+            if(t1->left) t1->left->parent = t1;
             t1->right = merge(t1->right, t2->right);
+            if(t1->right) t1->right->parent = t1;
+            balance(t1);
             return t1;
         }   
-        void preorderTraversal(Node* node){
-            if(node != NULL){
-                cout << node->data << " | ";
-                preorderTraversal(node->left);
-                preorderTraversal(node->right);
-            }
-        }
-        void inorderTraversal(Node* node){
-            if(node != NULL){
-                inorderTraversal(node->left);
-                cout << node->data << " | ";
-                inorderTraversal(node->right);
-            }
-        }
-        pair<Node*, Node*> split(Node* root, T key){
-            if(root == NULL) return pair<Node*, Node*>{NULL, NULL};
-            else if(key > root->data){
-                pair<Node*, Node*> p = split(root->right, key);
-                root->right = p.first;
-                if(p.first != NULL) p.first->parent = root;
-                return pair<Node*, Node*>{root, p.second};
+        pair<Node*, Node*> split(Node* local_root, T key){
+            if(local_root == NULL) return pair<Node*, Node*>{NULL, NULL};
+            else if(key > local_root->data){
+                pair<Node*, Node*> p = split(local_root->right, key);
+                local_root->right = p.first;
+                if(p.first) p.first->parent = local_root;
+                //balance(p.first);
+                //balance(local_root);
+                return pair<Node*, Node*>{local_root, p.second};
             }
             else{
-                pair<Node*, Node*> p = split(root->left, key);
-                root->left = p.second;
-                if(p.second != NULL) p.second->parent = root;
-                return pair<Node*, Node*>{p.first, root};
+                pair<Node*, Node*> p = split(local_root->left, key);
+                local_root->left = p.second;
+                if(p.second) p.second->parent = local_root;
+                //balance(p.second);
+                //balance(local_root);
+                return pair<Node*, Node*>{p.first, local_root};
             }
         }
         int size(Node* node){ return node == NULL ? 0 : 1 + size(node->left) + size(node->right); }
-        Node* find_ptr(T val){
-            if (root != NULL){
-                Node* node = root;
-                while(val > node->data ? node->right != NULL : node->left != NULL){
-                    if(node->data == val) return node;
-                    else node = val > node->data ? node->right : node->left;
-                }
-                return node;
-            }
-            return NULL;
-        }
-        
         void findInRange_vector(T minObject, T maxObject, vector<T>* elements, Node* local_root){
             if(local_root != NULL){
                 T data = local_root->data;
@@ -187,12 +242,49 @@ using namespace std;template<typename T, typename Node> class AVLTree{
             if(local_root != NULL){
                 T data = local_root->data;
                 if(data <= maxObject && data >= minObject) num++;
-                if(data >= minObject) num += findInRange(minObject, maxObject, local_root->left);
-                if(data <= maxObject) num += findInRange(minObject, maxObject, local_root->right);
+                if(data > minObject) num += findInRange(minObject, maxObject, local_root->left);
+                if(data < maxObject) num += findInRange(minObject, maxObject, local_root->right);
             }
             return num;
         }
-        int height(Node* local_root) { return local_root == NULL ? 0 : 1 + max( height( local_root->left ), height( local_root->right ) ); }
+        Node* erase(Node* local_root, T val){
+            if (local_root == NULL){
+                Size++;
+                return NULL;
+            }
+            Node* reserve = local_root;
+            if (val < local_root->data){
+                local_root->left = erase(local_root->left, val);
+                if(local_root->left) local_root->left->parent = local_root;
+            }
+            else if (val > local_root->data) {
+                local_root->right = erase(local_root->right, val);
+                if(local_root->right) local_root->right->parent = local_root;
+            }
+            else if (local_root->left != NULL and local_root->right != NULL) {
+                if(local_root->right->left == NULL){
+                    local_root->data = local_root->right->data;
+                    reserve = local_root->right;
+                    local_root->right = local_root->right->right;
+                    delete reserve;
+                    if(local_root->right) local_root->right->parent = local_root;
+                }
+                else
+                    local_root->data = eraseMin(local_root->right);
+            }
+            else {
+                reserve = local_root;
+                if (local_root->left != NULL)
+                    local_root = local_root->left;
+                else if (local_root->right != NULL)
+                    local_root = local_root->right;
+                else
+                    local_root = NULL;
+                delete reserve;
+            }
+            balance(local_root);
+            return local_root;
+        }
         Node* find_min(Node* local_root){
             Node* node = local_root;
             for(; node->left != NULL; node = node->left){}
@@ -203,4 +295,17 @@ using namespace std;template<typename T, typename Node> class AVLTree{
             for(; node->right != NULL; node = node->right){}
             return node;
         }
+        Node* find_ptr(T val){
+            if (root != NULL){
+                Node* node = root;
+                while(val > node->data ? node->right != NULL : node->left != NULL){
+                    if(node->data == val) return node;
+                    else node = val > node->data ? node->right : node->left;
+                }
+                return node;
+            }
+            return NULL;
+        }
 };
+
+

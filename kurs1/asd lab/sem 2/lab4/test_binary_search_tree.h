@@ -40,7 +40,7 @@ bool testBinarySearchTree()
         dataToRangeQueries.push_back({minData, maxData});
     }
 
-    BinarySearchTree<Data, Node<Data>> myTree;
+    BinarySearchTree<Data> myTree;
     clock_t myStart = clock();
     for (int i = 0; i < iters; i++)
     {

@@ -7,8 +7,9 @@
 #include <algorithm>
 #include "common.h"
 using namespace std;
-template<typename T, typename Node> class BinarySearchTree{
+template<typename T> class BinarySearchTree{
     public :
+        typedef BinaryNode<T> Node;
         Node* root = NULL;
         int Size = 0;
         BinarySearchTree(){}
@@ -26,9 +27,6 @@ template<typename T, typename Node> class BinarySearchTree{
                 else Size--;
             }
         }   
-        void balance(){
-
-        }
         void erase(T val){
             if(root != NULL){
                 Node* elem_to_delete = find_ptr(val);
@@ -82,20 +80,6 @@ template<typename T, typename Node> class BinarySearchTree{
         int height(){ return height(root); }
         bool empty(){ return Size <= 0; }
         int size(){ return this->Size; }
-        BinarySearchTree<T, Node>* split(T key){
-            Node* new_root = NULL;
-            if (root->data == key){
-                new_root = new Node(key, NULL);
-                new_root->left = NULL;
-                new_root->right = root->right;
-            }
-            else{
-                pair<Node*, Node*> p = split(root, key);
-                new_root = p.second;
-            }
-            BinarySearchTree<T, Node>* new_tree = new BinarySearchTree<T, Node>{new_root};
-            return new_tree;
-        }
         void print(){
             cout << "inorder traversal :" << endl;
             if(root == NULL) cout << "No elements" << endl;
@@ -108,9 +92,24 @@ template<typename T, typename Node> class BinarySearchTree{
             else cout << "No elements to traverse" << endl;
             cout << endl;
         }
-        void merge(BinarySearchTree<T, Node> *tree){
-            Node* new_root = tree->root;
+        void merge(BinarySearchTree<T>& tree){
+            Node* new_root = tree.root;
             root = merge(root, new_root);
+        }
+        BinarySearchTree<T>* split(T key){
+            Node* new_root = NULL;
+            if (root->data == key){
+                new_root = new Node(key, NULL);
+                new_root->left = NULL;
+                new_root->right = root->right;
+            }
+            else{
+                pair<Node*, Node*> p = split(root, key);
+                cout << p.first->data << " " << p.second->data << endl;
+                new_root = p.second;
+            }
+            BinarySearchTree<T>* new_tree = new BinarySearchTree<T>{new_root};
+            return new_tree;
         }
     private :
 
@@ -119,7 +118,9 @@ template<typename T, typename Node> class BinarySearchTree{
             if (t2 == NULL) return t1;
             t1->data += t2->data;
             t1->left = merge(t1->left, t2->left);
+            if(t1->left) t1->left->parent = t1;
             t1->right = merge(t1->right, t2->right);
+            if(t1->right) t1->right->parent = t1;
             return t1;
         }   
         void preorderTraversal(Node* node){
