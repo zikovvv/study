@@ -17,6 +17,11 @@ template<typename T> class BinarySearchTree{
             root = node;
             Size = size(root);
         }
+        ~BinarySearchTree(){
+            cout << "destructed" << endl;
+            auto f = [=](Node* node){ delete node; };
+            postorderTraversal(root, f);
+        }
         void insert(T new_val){
             Size ++;
             if(root == NULL) root = new Node{new_val, NULL};
@@ -81,75 +86,81 @@ template<typename T> class BinarySearchTree{
         bool empty(){ return Size <= 0; }
         int size(){ return this->Size; }
         void print(){
+            auto f = [this](Node* node){ cout << node->data << " | "; };
             cout << "inorder traversal :" << endl;
             if(root == NULL) cout << "No elements" << endl;
-            else inorderTraversal(root);
+            else inorderTraversal(root, f);
             cout << endl;
         } 
         void preorderTraversal(){
-            cout << "preorder treversal :" << endl;
-            if(root != NULL) preorderTraversal(root);
-            else cout << "No elements to traverse" << endl;
+            cout << "preorder traversal :" << endl;
+            auto f = [this](Node* node){ cout << node->data << " | "; };
+            if(root != NULL) preorderTraversal(root, f);
+            else cout << "No elements to traverse" << endl;    
             cout << endl;
         }
         void merge(BinarySearchTree<T>& tree){
             Node* new_root = tree.root;
             root = merge(root, new_root);
+            tree.root = NULL;
         }
         BinarySearchTree<T>* split(T key){
-            Node* new_root = NULL;
-            if (root->data == key){
-                new_root = new Node(key, NULL);
-                new_root->left = NULL;
-                new_root->right = root->right;
-            }
-            else{
-                pair<Node*, Node*> p = split(root, key);
-                cout << p.first->data << " " << p.second->data << endl;
-                new_root = p.second;
-            }
-            BinarySearchTree<T>* new_tree = new BinarySearchTree<T>{new_root};
+            pair<Node*, Node*> p = split(root, key);
+            Node* new_root = p.second;
+            root = p.first;
+            BinarySearchTree<T>* new_tree = new BinarySearchTree<T>(new_root);
             return new_tree;
         }
     private :
 
         Node* merge(Node* t1, Node* t2){
-            if (t1 == NULL) return t2;
             if (t2 == NULL) return t1;
-            t1->data += t2->data;
-            t1->left = merge(t1->left, t2->left);
-            if(t1->left) t1->left->parent = t1;
-            t1->right = merge(t1->right, t2->right);
-            if(t1->right) t1->right->parent = t1;
-            return t1;
-        }   
-        void preorderTraversal(Node* node){
-            if(node != NULL){
-                cout << node->data << " | ";
-                preorderTraversal(node->left);
-                preorderTraversal(node->right);
-            }
-        }
-        void inorderTraversal(Node* node){
-            if(node != NULL){
-                inorderTraversal(node->left);
-                cout << node->data << " | ";
-                inorderTraversal(node->right);
-            }
-        }
-        pair<Node*, Node*> split(Node* root, T key){
-            if(root == NULL) return pair<Node*, Node*>{NULL, NULL};
-            else if(key > root->data){
-                pair<Node*, Node*> p = split(root->right, key);
-                root->right = p.first;
-                if(p.first != NULL) p.first->parent = root;
-                return pair<Node*, Node*>{root, p.second};
+            if (t1 == NULL) return t2;
+            else if (t1->data > t2->data){
+                t1->right = merge(t1->right, t2);
+                if(t1->right) t1->right->parent = t1;
+                return t1;
             }
             else{
-                pair<Node*, Node*> p = split(root->left, key);
-                root->left = p.second;
-                if(p.second != NULL) p.second->parent = root;
-                return pair<Node*, Node*>{p.first, root};
+                t2->left = merge(t1, t2->left);
+                if(t2->left) t2->left->parent = t2;
+                return t2;
+            }
+        }
+        void preorderTraversal(Node* node, auto& action){
+            if(node != NULL){
+                action(node);
+                preorderTraversal(node->left, action);
+                preorderTraversal(node->right, action);
+            }
+        }
+        void inorderTraversal(Node* node, auto& action){
+            if(node != NULL){
+                inorderTraversal(node->left, action);
+                action(node);
+                inorderTraversal(node->right, action);
+            }
+        }
+        void postorderTraversal(Node* node, auto& action){
+            if(node != NULL){
+                postorderTraversal(node->left, action);
+                postorderTraversal(node->right, action);
+                action(node);
+            }
+        }
+        pair<Node*, Node*> split(Node* local_root, T key){
+            if(local_root == NULL) return pair<Node*, Node*>{NULL, NULL};
+            else if(key > local_root->data){
+                pair<Node*, Node*> p = split(local_root->right, key);
+                local_root->right = p.first;
+                if(p.first) p.first->parent = local_root;
+                return pair<Node*, Node*>{local_root, p.second};
+            }
+            else{
+                pair<Node*, Node*> p = split(local_root->left, key);
+                local_root->left = p.second;
+                if(p.second) p.second->parent = local_root;
+                return pair<Node*, Node*>{p.first, local_root};
             }
         }
         int size(Node* node){ return node == NULL ? 0 : 1 + size(node->left) + size(node->right); }

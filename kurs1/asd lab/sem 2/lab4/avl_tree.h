@@ -16,12 +16,14 @@ template<typename T> class AVLTree{
         AVLTree(Node* node){
             root = node;
             Size = size(root);
+            updateHeightGlobalRecursive(root);
         }
         ~AVLTree(){
             cout << "destructed" << endl;
             auto f = [=](Node* node){ delete node; };
             postorderTraversal(root, f);
         }
+        
         void insert(T val){
             Size++;
             if(root == NULL) root = new Node{val, NULL};
@@ -77,22 +79,15 @@ template<typename T> class AVLTree{
         bool empty(){ return root == NULL; }
         int size(){ return this->Size; }
         AVLTree<T>* split(T key){
-            Node* new_root = NULL;
-            if (root->data == key){
-                new_root = root;
-                new_root->left = NULL;
-                root = root->left;
-            }
-            else{
-                pair<Node*, Node*> p = split(root, key);
-                new_root = p.second;
-            }
+            pair<Node*, Node*> p = split(root, key);
+            Node* new_root = p.second;
+            root = p.first;
             AVLTree<T>* new_tree = new AVLTree<T>(new_root);
-            new_tree->insert(key);
+            updateHeightGlobalRecursive(root);
             return new_tree;
         }
         void print(){
-            auto f = [this](Node* node){ cout << node->data <<  ", h: " << node->height << " bfactor :  "  <<  bfactor(node) << endl; };
+            auto f = [this](Node* node){ cout << node->data << " | "; };
             cout << "inorder traversal :" << endl;
             if(root == NULL) cout << "No elements" << endl;
             else inorderTraversal(root, f);
@@ -100,7 +95,8 @@ template<typename T> class AVLTree{
         } 
         void preorderTraversal(){
             cout << "preorder traversal :" << endl;
-            auto f = [this](Node* node){ cout << node->data <<  ", h: " << node->height << " bfactor :  "  <<  bfactor(node) << endl; };
+            //auto f = [this](Node* node){ cout << node->data << ' ' << bfactor(node) << endl <<  " | "; };
+            auto f = [this](Node* node){ cout << node->data <<  " | "; };
             if(root != NULL) preorderTraversal(root, f);
             else cout << "No elements to traverse" << endl;    
             cout << endl;
@@ -108,13 +104,16 @@ template<typename T> class AVLTree{
         void merge(AVLTree<T> &tree){
             Node* new_root = tree.root;
             root = merge(root, new_root);
+            tree.root = NULL;
+            updateHeightGlobalRecursive(root);
         }
         int bfactor(Node* local_root){
             return local_root == NULL ? 0 : (local_root->left != NULL ? local_root->left->height : 0) - (local_root->right != NULL ? local_root->right->height : 0);
         }
         void balance(Node* local_root){
             updateHeightLocal(local_root);
-            int factor = bfactor(local_root);    
+            int factor = bfactor(local_root);
+
             if (factor == 2) {
                 if (bfactor(local_root->left) < 0){
                     rotateLeft(local_root->left);
@@ -131,6 +130,13 @@ template<typename T> class AVLTree{
         void updateHeightLocal(Node* r){
             if(r != NULL)
                 r->height = 1 + max(r->right ? r->right->height : 0, r->left ? r->left->height : 0);
+        }
+        void updateHeightGlobalRecursive(Node* node){
+            if(node != NULL){
+                updateHeightGlobalRecursive(node->left);
+                updateHeightGlobalRecursive(node->right);
+                node->height = 1 + max(node->left ? node->left->height : 0, node->right ? node->right->height : 0);
+            }
         }
         void rotateRight(Node* r){
             Node* temp_node = r->right;
@@ -192,39 +198,35 @@ template<typename T> class AVLTree{
         }
         void postorderTraversal(Node* node, auto& action){
             if(node != NULL){
-                cout << node << endl;
                 postorderTraversal(node->left, action);
                 postorderTraversal(node->right, action);
                 action(node);
             }
         }
         Node* merge(Node* t1, Node* t2){
-            if (t1 == NULL) return t2;
             if (t2 == NULL) return t1;
-            t1->data += t2->data;
-            t1->left = merge(t1->left, t2->left);
-            if(t1->left) t1->left->parent = t1;
-            t1->right = merge(t1->right, t2->right);
-            if(t1->right) t1->right->parent = t1;
-            balance(t1);
-            return t1;
-        }   
+            if (t1 == NULL) return t2;
+            else if (t1->data > t2->data){
+                t1->right = merge(t1->right, t2);
+                return t1;
+            }
+            else{
+                t2->left = merge(t1, t2->left);
+                return t2;
+            }
+        }
         pair<Node*, Node*> split(Node* local_root, T key){
             if(local_root == NULL) return pair<Node*, Node*>{NULL, NULL};
             else if(key > local_root->data){
                 pair<Node*, Node*> p = split(local_root->right, key);
                 local_root->right = p.first;
                 if(p.first) p.first->parent = local_root;
-                //balance(p.first);
-                //balance(local_root);
                 return pair<Node*, Node*>{local_root, p.second};
             }
             else{
                 pair<Node*, Node*> p = split(local_root->left, key);
                 local_root->left = p.second;
                 if(p.second) p.second->parent = local_root;
-                //balance(p.second);
-                //balance(local_root);
                 return pair<Node*, Node*>{p.first, local_root};
             }
         }

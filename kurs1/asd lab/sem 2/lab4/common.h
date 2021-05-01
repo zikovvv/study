@@ -20,31 +20,19 @@ struct Data{
         name = new char[namelen + 1];
         for (size_t i = 0; i < namelen; i++) name[i] = rand() % 26 + 'a';
         name[namelen] = '\0';
-        mean_points = rand() % 10;//(float)(rand() % 100) / (rand() % 100);
+        mean_points = rand() % 1000000;//(float)(rand() % 100) / (rand() % 100);
         will = rand() % 10;
-        cheated = rand() % 10;
+        cheated = rand() % 10000;
     }
 };
-bool operator<(const Data & e1, const Data & e2){ return e1.mean_points < e2.mean_points; }
-bool operator>(const Data & e1, const Data & e2){ return e1.mean_points > e2.mean_points; }
-bool operator>=(const Data & e1, const Data & e2){ return e1.mean_points >= e2.mean_points; }
-bool operator<=(const Data & e1, const Data & e2){ return e1.mean_points <= e2.mean_points; }
-bool operator==(const Data & e1, const Data & e2){ return e1.mean_points == e2.mean_points; }
-bool operator!=(const Data & e1, const Data & e2){ return e1.mean_points != e2.mean_points; }
-Data operator+=(Data e1, Data e2){
-    e1.mean_points += e2.mean_points;
-    e1.will += e2.will;
-    e1.cheated += e2.cheated;
-    char* new_name = new char[strlen(e1.name) + strlen(e2.name)];
-    strcat(new_name, e1.name);
-    strcat(new_name, e2.name);
-    delete [] e1.name;
-    e1.name = new_name;
-    return e1;
-    //return Data(e1.name, e2.name, e1.mean_points + e2.mean_points, e1.will + e1.will, e1.cheated + e1.cheated);
-}
+bool operator<(const Data & e1, const Data & e2){ return e1.mean_points + e1.cheated < e2.mean_points + e2.cheated; }
+bool operator>(const Data & e1, const Data & e2){ return e1.mean_points + e1.cheated > e2.mean_points + e2.cheated; }
+bool operator>=(const Data & e1, const Data & e2){ return e1.mean_points + e1.cheated >= e2.mean_points + e2.cheated; }
+bool operator<=(const Data & e1, const Data & e2){ return e1.mean_points + e1.cheated <= e2.mean_points + e2.cheated; }
+bool operator==(const Data & e1, const Data & e2){ return e1.mean_points + e1.cheated == e2.mean_points + e2.cheated; }
+bool operator!=(const Data & e1, const Data & e2){ return e1.mean_points + e1.cheated != e2.mean_points + e2.cheated; }
 ostream& operator<<(ostream & os, Data & e){
-    os << e.name << ' ' << e.mean_points << ' ' << e.will << ' ' << e.cheated << endl;
+    os << e.name << ' ' << e.mean_points << ' ' << e.will << ' ' << e.cheated;
     return os;
 }
 template<typename T> struct BinaryNode{
@@ -56,6 +44,12 @@ template<typename T> struct BinaryNode{
         data = val;
         parent = ptr;
     }
+    BinaryNode(BinaryNode<T>* ptr) {
+        data = ptr->data;
+        left = ptr->left;
+        right = ptr->right;
+        parent = ptr->parent;
+    }
 };
 template<typename T> struct AVLNode{
     T data;
@@ -66,5 +60,12 @@ template<typename T> struct AVLNode{
     AVLNode(T val, AVLNode<T>* ptr) {
         data = val;
         parent = ptr;
+    }
+    AVLNode(AVLNode<T>* ptr) {
+        data = ptr->data;
+        height = ptr->height;
+        left = ptr->left;
+        right = ptr->right;
+        parent = ptr->parent;
     }
 };

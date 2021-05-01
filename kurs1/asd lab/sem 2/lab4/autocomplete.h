@@ -3,12 +3,10 @@
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
-#include <cstdlib>
 #include <algorithm>
 #include <fstream>
 #include <vector>
 #include <unordered_map>
-
 using namespace std;
 struct Node_char{
     bool isWord = false;
@@ -16,9 +14,9 @@ struct Node_char{
     unordered_map<char, Node_char*> children;
 };
 class Trie {
-    public : 
+    public :
+        ~Trie(){destructor(root);cout<<"autocompleter destructed" << endl;} 
         Node_char* root = new Node_char;
-        
         void insert(char* word) {
             Node_char* node = root;
             int l = strlen(word);
@@ -44,31 +42,27 @@ class Trie {
             }
             f.close();
         }
-        vector<string> indByPrefix(string word) {
-            vector<string> possible_words;
+        vector<string*>* indByPrefix(string word) {
+            cout << "search for words starting with " << '"' << word << '"' << endl;
+            vector<string*>* possible_words = new vector<string*>;
             Node_char* node = root;
             for (int i = 0; i < word.length(); i++) {
                 if (node->children.count(word[i]) == 0) return possible_words;
                 node = node->children.at(word[i]);
             }
-            indByPrefix(&word, node, &possible_words);
+            indByPrefix(new string(word), node, possible_words);
             return possible_words;
         }
-        void destructor(){ destructor(root); }
     private : 
-        void indByPrefix(string* word, Node_char* local_root, vector<string>* possible_words) {
-            if(local_root->isWord){
-                possible_words->push_back(*word);
-                if (local_root->isLeaf) delete word;
+        void indByPrefix(string* word, Node_char* local_root, vector<string*>* possible_words) {
+            if(local_root->isWord) {
+                possible_words->push_back(word);
+                word = new string(*word);
             }
             if(!local_root->isLeaf){
-                auto it = local_root->children.cbegin();  
                 string parentword(*word);
-                word->push_back(it->first);
-                indByPrefix(word, it->second, possible_words);
-                ++it;
-                for(it; it != local_root->children.cend(); ++it){
-                    string* new_word = new string(parentword);
+                for(auto it = local_root->children.cbegin(); it != local_root->children.cend(); ++it){
+                    string* new_word = it == local_root->children.cbegin() ? word : new string(parentword);
                     new_word->push_back(it->first);
                     indByPrefix(new_word, it->second, possible_words);
                 }
