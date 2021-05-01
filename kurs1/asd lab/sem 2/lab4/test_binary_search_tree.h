@@ -10,9 +10,9 @@ bool testBinarySearchTree()
 {
     srand(time(NULL));
 
-    const int iters = 80000;
-    const int keysAmount = iters * 2;
-    const int itersToRangeQueries = 1000;
+    const int iters = 800000;
+    const int keysAmount = iters * 10;
+    const int itersToRangeQueries = 100000;
 
     vector<Data> data(keysAmount);
 

@@ -20,9 +20,9 @@ struct Data{
         name = new char[namelen + 1];
         for (size_t i = 0; i < namelen; i++) name[i] = rand() % 26 + 'a';
         name[namelen] = '\0';
-        mean_points = rand() % 1000000;//(float)(rand() % 100) / (rand() % 100);
+        mean_points = rand() + rand();//(float)(rand() % 100) / (rand() % 100);
         will = rand() % 10;
-        cheated = rand() % 10000;
+        cheated = rand() + rand();
     }
 };
 bool operator<(const Data & e1, const Data & e2){ return e1.mean_points + e1.cheated < e2.mean_points + e2.cheated; }

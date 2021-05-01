@@ -90,10 +90,10 @@ int main(){
     srand(time(NULL));
 
     //autocompleter_test();
-    //bin_tree_default_test();
+    bin_tree_default_test();
     //bin_tree_test_split_merge();
     //avl_tree_default_test();
-    avl_tree_test_split_merge();
+    //avl_tree_test_split_merge();
 
     cout << "finished" << endl;
     getchar();
