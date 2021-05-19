@@ -25,7 +25,7 @@ void create_file_and_write(char * filepath){
         fputs(temp, f);
         fputc('\n', f);
     }
-    //fputc((char)(26), f);
+    fputc((char)(26), f);
     cout << endl;
     fclose(f);
 } 
@@ -65,8 +65,8 @@ int main() {
     SetConsoleOutputCP(1251);
 
     //путь к файлу
-    char* filepath = "C:\\Users\\Latitude\\Desktop\\ap_lab\\lab13.txt";
-    char* filepath1 = "C:\\Users\\Latitude\\Desktop\\ap_lab\\lab13_1.txt";
+    char* filepath = "lab13.txt";
+    char* filepath1 = "lab13_1.txt";
 
     
     //створює файл в якому є випакові рядки випадуової довжини з циярами і з символами

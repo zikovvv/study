@@ -4,29 +4,6 @@ import numpy as np
 from pprint import pprint
 import time
 
-pygame.init()
-FOLDER_ABS_PATH = os.path.dirname(os.path.abspath(__file__))
-CELL_WIDTH = 90
-FIGURE_SCALE = [CELL_WIDTH, CELL_WIDTH]
-SCREEN_WIDTH = 8 * CELL_WIDTH
-SCREEN_HEIGHT = 8 * CELL_WIDTH
-FONT_SIZE = CELL_WIDTH // 5
-FIGURE_SHIFT = np.array([(CELL_WIDTH - FIGURE_SCALE[0]) // 2, (CELL_WIDTH - FIGURE_SCALE[1]) // 2])
-COORDS_FONT = pygame.font.SysFont('Comic Sans MS', CELL_WIDTH // 5)
-COORDS_TEXT = 'abcdefgh'
-DARK = (116, 150, 84)
-LIGHT = (236, 238, 212)
-SHIFTS_SQUARE = np.array([[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]) 
-PATH_DELTAS = np.array([[1, 1], [1, 0], [1, -1], [0, -1], [-1, -1], [-1, 0], [-1, 1], [0, 1]])
-PATHS = {
-    'queen' : [[path_delta * j for j in range(1, 10)] for path_delta in PATH_DELTAS],
-    'bishop' : [[path_delta * j for j in range(1, 10)] for j, path_delta in enumerate(PATH_DELTAS) if [1, 0, 1, 0, 1, 0, 1, 0][j]],
-    'rook' : [[path_delta * j for j in range(1, 10)] for j, path_delta in enumerate(PATH_DELTAS) if [0, 1, 0, 1, 0, 1, 0, 1][j]], 
-    'king' : [[path_delta] for path_delta in PATH_DELTAS],
-    'knight' : np.array([[[1, 2]], [[2, 1]], [[2, -1]], [[-1, 2]], [[-1, -2]], [[-2, -1]], [[-2, 1]], [[1, -2]]]),
-    'pawn' : np.array([[1, 0], [1, -1], [1, 1], [2, 0], [-1, 0], [-1, -1], [-1, 1], [-2, 0]]),
-}
-
 def def_start_figure_by_coord(x, y) :
     if x in [1, 6] :
         #return [None] * 3
@@ -54,25 +31,34 @@ def get_all_possible_places_to_turn(active_figure) :
                 tempcell = active_figure + shift
                 if is_inside_field(tempcell) :
                     tempfigure = field[tempcell[1]][tempcell[0]]
-                    if tempfigure[1] != figure[1] : highlighted[tempcell[1]][tempcell[0]] = 1
-                    if tempfigure[0] != None : break
+                    if tempfigure[1] != figure[1] : 
+                        highlighted[tempcell[1]][tempcell[0]] = 1
+                    if tempfigure[0] != None : 
+                        break
     else :
         possible = []
         x_shift = 1 if figure[1] else -1
-        fig = [[None, None, None]] * 4
-        if is_inside_field([active_figure[0] + x_shift, active_figure[1] - 1]) : fig[0] = field[active_figure[1] - 1][active_figure[0] + x_shift]
-        if is_inside_field([active_figure[0] + x_shift, active_figure[1]]) : fig[1] = field[active_figure[1]][active_figure[0] + x_shift]
-        if is_inside_field([active_figure[0] + x_shift, active_figure[1] + 1]) : fig[2] = field[active_figure[1] + 1][active_figure[0] + x_shift]
-        if is_inside_field([active_figure[0] + x_shift * 2, active_figure[1]]) : fig[3] = field[active_figure[1]][active_figure[0] + x_shift * 2]
-        if fig[0][0] and fig[0][1] != figure[1] : possible.append(1)
+        fig = [(field[y][x] if is_inside_field([x, y]) else [None] * 3) for x, y in [
+                [active_figure[0] + x_shift, active_figure[1] - 1],
+                [active_figure[0] + x_shift, active_figure[1]],
+                [active_figure[0] + x_shift, active_figure[1] + 1],
+                [active_figure[0] + x_shift * 2, active_figure[1]]
+            ]]
+
+        if fig[0][0] and fig[0][1] != figure[1] : 
+            possible.append(1)
         if not any(fig[1]) : 
             possible.append(0)
-            if not figure[2] and not any(fig[3]) : possible.append(3) 
-        if fig[2][0] and fig[2][1] != figure[1] : possible.append(2)
+            if not figure[2] and not any(fig[3]) : 
+                possible.append(3) 
+        if fig[2][0] and fig[2][1] != figure[1] : 
+            possible.append(2)
+            
         index_shift = 0 if figure[1] else 4
         for index in possible :
             tempcell = PATHS['pawn'][index + index_shift] + active_figure
-            if is_inside_field(tempcell) : highlighted[tempcell[1]][tempcell[0]] = 1
+            if is_inside_field(tempcell) : 
+                highlighted[tempcell[1]][tempcell[0]] = 1
     return highlighted
 
 def draw_square(cell, color, border = 5) :
@@ -119,7 +105,7 @@ def is_check() :
     return res
 
 def turn(back) :
-    global TURN, field, kincgs, coord, highlighted, active_cell, cell_is_active, cellS
+    #global TURN, field, kings, coord, highlighted, active_cell, cell_is_active, cell
     AF = field[active_cell[1]][active_cell[0]]
     kingmode = AF[0] == 'king'
     if back :
@@ -148,7 +134,7 @@ def turn(back) :
         return True
 
 def mate() :
-    global TURN, field, kincgs, coord, highlighted, active_cell, cell_is_active, cell
+    #global TURN, field, kings, coord, highlighted, active_cell, cell_is_active, cell
     for y in range(8) :
         for x in range(8) :
             figure = field[y][x]
@@ -165,62 +151,25 @@ def mate() :
                                     return 0
     return 1 if TURN else -1
 
-#init window
-screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
-pygame.display.set_caption('CHESS')
+def game() :
+    #init field
+    field = [[def_start_figure_by_coord(x, y) for x in range(8)] for y in range(8)]            
+    kings = {True : np.array([0, 4]), False : np.array([7, 4])}
 
-#load images
-white_figures = {
-    'pawn' : pygame.transform.scale(pygame.image.load(FOLDER_ABS_PATH + '\\images\\pawn_white.png'), FIGURE_SCALE),
-    'rook' : pygame.transform.scale(pygame.image.load(FOLDER_ABS_PATH + '\\images\\rook_white.png'), FIGURE_SCALE),
-    'knight' : pygame.transform.scale(pygame.image.load(FOLDER_ABS_PATH + '\\images\\knight_white.png'), FIGURE_SCALE),
-    'bishop' : pygame.transform.scale(pygame.image.load(FOLDER_ABS_PATH + '\\images\\bishop_white.png'), FIGURE_SCALE),
-    'king' : pygame.transform.scale(pygame.image.load(FOLDER_ABS_PATH + '\\images\\king_white.png'), FIGURE_SCALE),
-    'queen' : pygame.transform.scale(pygame.image.load(FOLDER_ABS_PATH + '\\images\\queen_white.png'), FIGURE_SCALE),
-}
-black_figures = {
-    'pawn' : pygame.transform.scale(pygame.image.load(FOLDER_ABS_PATH + '\\images\\pawn_black.png'), FIGURE_SCALE),
-    'rook' : pygame.transform.scale(pygame.image.load(FOLDER_ABS_PATH + '\\images\\rook_black.png'), FIGURE_SCALE),
-    'knight' : pygame.transform.scale(pygame.image.load(FOLDER_ABS_PATH + '\\images\\knight_black.png'), FIGURE_SCALE),
-    'bishop' : pygame.transform.scale(pygame.image.load(FOLDER_ABS_PATH + '\\images\\bishop_black.png'), FIGURE_SCALE),
-    'king' : pygame.transform.scale(pygame.image.load(FOLDER_ABS_PATH + '\\images\\king_black.png'), FIGURE_SCALE),
-    'queen' : pygame.transform.scale(pygame.image.load(FOLDER_ABS_PATH + '\\images\\queen_black.png'), FIGURE_SCALE),
-}
-
-fon = pygame.transform.scale(pygame.image.load(FOLDER_ABS_PATH + '\\images\\field.png'), (CELL_WIDTH * 8, CELL_WIDTH * 8))
-
-active = pygame.image.load(FOLDER_ABS_PATH + '\\images\\active_figure.jpg')
-active = pygame.transform.scale(active, (CELL_WIDTH, CELL_WIDTH))
-active.set_alpha(180)
-
-black = pygame.image.load(FOLDER_ABS_PATH + '\\images\\ultrablack_pixel.jpg')
-black = pygame.transform.scale(black, (CELL_WIDTH, CELL_WIDTH))
-miniblack = pygame.transform.scale(black, (CELL_WIDTH // 3, CELL_WIDTH // 3))
-miniblack.set_alpha(120)
-
-#init field
-field = []
-for y in range(8) :
-    field.append([])
-    for x in range(8) :
-        field[y].append(def_start_figure_by_coord(x, y))            
-kings = {True : np.array([0, 4]), False : np.array([7, 4])}
-
-#game cycle
-highlighted = np.zeros((8, 8))
-TURN = True
-cell_is_active = False
-winner = 0
-while 1 : 
-    mouse = np.array(pygame.mouse.get_pos())
-    coord = mouse // CELL_WIDTH
-    for e in pygame.event.get() : 
-        if e.type == pygame.QUIT : exit()
-        if e.type == pygame.MOUSEBUTTONDOWN :
-            if e.button == 1 and winner == 0 : 
-                cell_is_active = False
-                if is_inside_field(coord) :
+    #game cycle
+    highlighted = np.zeros((8, 8))
+    TURN = True
+    cell_is_active = False
+    winner = 0
+    while 1 : 
+        mouse = np.array(pygame.mouse.get_pos())
+        coord = mouse // CELL_WIDTH
+        for e in pygame.event.get() : 
+            if e.type == pygame.QUIT :
+                exit()
+            if e.type == pygame.MOUSEBUTTONDOWN :
+                if e.button == 1 and winner == 0 : 
+                    cell_is_active = False
                     cell = field[coord[1]][coord[0]]
                     if TURN == cell[1] :
                         active_cell = coord
@@ -232,6 +181,76 @@ while 1 :
                             winner = mate()
                     else : 
                         highlighted = np.zeros((8, 8))
-    draw_field()
-    screen.blit(surface, (0, 0))
-    pygame.display.update()
+        draw_field()
+        screen.blit(surface, (0, 0))
+        pygame.display.update()
+        
+    game()
+
+
+
+if __name__ == '__main__' :
+    pygame.init()
+    
+    FOLDER_ABS_PATH = os.path.dirname(os.path.abspath(__file__))
+    CELL_WIDTH = 100
+    FIGURE_SCALE = [CELL_WIDTH, CELL_WIDTH]
+    FIGURE_SHIFT = np.array([(CELL_WIDTH - FIGURE_SCALE[0]) // 2, (CELL_WIDTH - FIGURE_SCALE[1]) // 2])
+
+    SCREEN_WIDTH = 8 * CELL_WIDTH
+    SCREEN_HEIGHT = 8 * CELL_WIDTH
+
+    FONT_SIZE = CELL_WIDTH // 5
+    FONT = pygame.font.SysFont('Comic Sans MS', CELL_WIDTH // 5)
+
+    DARK = (116, 150, 84)
+    LIGHT = (236, 238, 212)
+
+    SHIFTS_SQUARE = np.array([[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]) 
+    PATH_DELTAS = np.array([[1, 1], [1, 0], [1, -1], [0, -1], [-1, -1], [-1, 0], [-1, 1], [0, 1]])
+    PATHS = {
+        'queen' : [[path_delta * j for j in range(1, 10)] for path_delta in PATH_DELTAS],
+        'bishop' : [[path_delta * j for j in range(1, 10)] for j, path_delta in enumerate(PATH_DELTAS) if [1, 0, 1, 0, 1, 0, 1, 0][j]],
+        'rook' : [[path_delta * j for j in range(1, 10)] for j, path_delta in enumerate(PATH_DELTAS) if [0, 1, 0, 1, 0, 1, 0, 1][j]], 
+        'king' : [[path_delta] for path_delta in PATH_DELTAS],
+        'knight' : np.array([[[1, 2]], [[2, 1]], [[2, -1]], [[-1, 2]], [[-1, -2]], [[-2, -1]], [[-2, 1]], [[1, -2]]]),
+        'pawn' : np.array([[1, 0], [1, -1], [1, 1], [2, 0], [-1, 0], [-1, -1], [-1, 1], [-2, 0]]),
+    }
+
+    #init window
+    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+    surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+    pygame.display.set_caption('CHESS')
+
+    #load images
+    white_figures = {
+        'pawn' : pygame.transform.scale(pygame.image.load(FOLDER_ABS_PATH + '\\images\\pawn_white.png'), FIGURE_SCALE),
+        'rook' : pygame.transform.scale(pygame.image.load(FOLDER_ABS_PATH + '\\images\\rook_white.png'), FIGURE_SCALE),
+        'knight' : pygame.transform.scale(pygame.image.load(FOLDER_ABS_PATH + '\\images\\knight_white.png'), FIGURE_SCALE),
+        'bishop' : pygame.transform.scale(pygame.image.load(FOLDER_ABS_PATH + '\\images\\bishop_white.png'), FIGURE_SCALE),
+        'king' : pygame.transform.scale(pygame.image.load(FOLDER_ABS_PATH + '\\images\\king_white.png'), FIGURE_SCALE),
+        'queen' : pygame.transform.scale(pygame.image.load(FOLDER_ABS_PATH + '\\images\\queen_white.png'), FIGURE_SCALE),
+    }
+    black_figures = {
+        'pawn' : pygame.transform.scale(pygame.image.load(FOLDER_ABS_PATH + '\\images\\pawn_black.png'), FIGURE_SCALE),
+        'rook' : pygame.transform.scale(pygame.image.load(FOLDER_ABS_PATH + '\\images\\rook_black.png'), FIGURE_SCALE),
+        'knight' : pygame.transform.scale(pygame.image.load(FOLDER_ABS_PATH + '\\images\\knight_black.png'), FIGURE_SCALE),
+        'bishop' : pygame.transform.scale(pygame.image.load(FOLDER_ABS_PATH + '\\images\\bishop_black.png'), FIGURE_SCALE),
+        'king' : pygame.transform.scale(pygame.image.load(FOLDER_ABS_PATH + '\\images\\king_black.png'), FIGURE_SCALE),
+        'queen' : pygame.transform.scale(pygame.image.load(FOLDER_ABS_PATH + '\\images\\queen_black.png'), FIGURE_SCALE),
+    }
+
+    fon = pygame.transform.scale(pygame.image.load(FOLDER_ABS_PATH + '\\images\\field.png'), (CELL_WIDTH * 8, CELL_WIDTH * 8))
+
+    active = pygame.image.load(FOLDER_ABS_PATH + '\\images\\active_figure.jpg')
+    active = pygame.transform.scale(active, (CELL_WIDTH, CELL_WIDTH))
+    active.set_alpha(180)
+
+    black = pygame.image.load(FOLDER_ABS_PATH + '\\images\\ultrablack_pixel.jpg')
+    black = pygame.transform.scale(black, (CELL_WIDTH, CELL_WIDTH))
+    miniblack = pygame.transform.scale(black, (CELL_WIDTH // 3, CELL_WIDTH // 3))
+    miniblack.set_alpha(120)
+
+    #global variables init
+    field, kings, highlighted, TURN, cell_is_active, winner = [0] * 6
+    game()  
